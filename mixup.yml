@@ -1,0 +1,53 @@
+# Experiment
+exp_name: add_concat_64width_2obj_randproj_insresblock_lr0.03
+dataset: shapenet
+cuda: True
+parallel: False
+
+
+# Model
+model: consnet
+decoder: insresblock
+pretrain_path: ./model.pkl
+
+# use resgcn
+nlayers: 3
+
+# decoder
+wide: 64
+
+
+# Hyper Parameter
+batch_size: 32
+test_batch_size: 32
+epochs: 200
+use_sgd: True
+lr: 0.0003 # sdg / 100, adam / 1
+momentum: 0.9
+scheduler: cos
+
+num_points: 512
+dropout: 0.5
+emb_dims: 1024
+k: 20
+
+# Part Segmention
+class_choice: None
+
+
+# Condition
+loss: chamfer
+pretrain_model: sem # sem / cls
+task: 2obj # 1obj_rotate / 2obj / alter
+extra: concat # concat / adain
+mixup: add # add / emd
+use_one_hot: False
+eval: False
+valid: True
+
+
+
+
+
+
+
