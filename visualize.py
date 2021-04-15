@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import h5py
+import random
 
 from models.model import ConsNet
 from utils import chamfer_distance
@@ -53,7 +54,7 @@ def data_process(args, model, data, label):
     if args.task == '1obj_rotate':
         data1, data2, label1, label2 = obj_rotate_perm(data, label, args.cuda) # (B, N, 3)
     elif args.task == '2obj':
-        data1, data2, label1, label2 = obj_2_perm(data, label, args.cuda) # (B, N, 3)
+        data1, data2, label1, label2 = test_obj_2_perm(data, label, args.cuda) # (B, N, 3)
     else:
         print('Task not implemented!')
         exit(0)
@@ -66,6 +67,9 @@ def data_process(args, model, data, label):
     
     mixup_data = mixup_data.permute(0, 2, 1) # (B, 3, N)
     batch_size = mixup_data.size()[0]
+    
+    # torch.set_printoptions(profile="full")
+    print(label[0])
 
     if args.use_one_hot:
         label_one_hot1 = np.zeros((batch_size, 16))
@@ -95,12 +99,54 @@ def data_process(args, model, data, label):
     
     return data1, data2, mixup_data, pred1, pred2
 
+
+def rand_proj(point):
+    '''
+    Project one point cloud into a plane randomly
+    :param point: size[B, N, 3]
+    :return: xy / yx / zx randomly
+    '''
+    list = range(point.size()[2])
+    indices = random.sample(list, 2)
+    indices = [min(indices), max(indices)]
+    indices = [1, 2]
+    print(indices)
+    coords = point[:, :, indices]
+    return coords
+
+
 class Config(dict):
     def __init__(self, *args, **kwargs):
         super(Config, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
+def test_obj_2_perm(data, label, use_cuda=True):
+    '''
+    Random permute point clouds
+    :param data: size[B, N, D]
+    :param plabel size[B, N]
+    :return: Permuted point clouds
+    '''
+    if use_cuda:
+        data = data.cuda()
+    batch_size, npoints = data.size()[0], data.size()[1]
 
+    lam = 0.5
+   
+    if use_cuda:
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+    
+    index = torch.tensor([1, 0, 3, 2, 5, 4, 7, 6])
+
+    if use_cuda:
+        index = index.cuda()
+
+    s1, s2 = data, data[index]
+    label1, label2 = label, label[index]
+
+    return s1, s2, label1, label2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Point Cloud')
@@ -126,7 +172,11 @@ if __name__ == '__main__':
         model = model.cuda()
 
     PATH = './data/shapenet_part_seg_hdf5_data/ply_data_test0.h5'
-    data, label, seg = data_loader(PATH, 16, 28)
+
+    start = 65
+    step = 8
+
+    data, label, seg = data_loader(PATH, start, start + step)
 
     data, label = torch.from_numpy(data), torch.from_numpy(label)
     data = data[:, :config.num_points, :]
@@ -145,7 +195,21 @@ if __name__ == '__main__':
     pred2 = pred2.detach()
     data = torch.cat([data1, data2, mixup_data, pred1, pred2], dim=0)
 
-    color = torch.zeros_like(data)
+    if config.cuda:
+        color1 = torch.zeros_like(data1).cuda() 
+        color2 = torch.zeros_like(data2).cuda()
+        color3 = torch.tensor([0, 0, 1]).repeat(mixup_data.size()[0], 1).float().cuda()
+        color4 = torch.tensor([1, 0, 0]).repeat(pred1.size()[0], 1).float().cuda()
+        color5 = torch.tensor([0, 1, 0]).repeat(pred2.size()[0], 1).float().cuda()
+
+    else:
+        color1 = torch.zeros_like(data1)
+        color2 = torch.zeros_like(data2)
+        color3 = torch.tensor([0, 0, 1]).repeat(mixup_data.size()[0], 1).float()
+        color4 = torch.tensor([1, 0, 0]).repeat(pred1.size()[0], 1).float()
+        color5 = torch.tensor([0, 1, 0]).repeat(pred2.size()[0], 1).float()
+
+    color = torch.cat([color1, color2, color3, color4, color5], dim=0)
     
 
     if config.cuda:

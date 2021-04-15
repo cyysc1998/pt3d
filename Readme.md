@@ -6,3 +6,4 @@ vim mixup.yml
 CUDA_VISIBLE_DEVICES=0 nohup python train.py --opt ./mixup.yml >log.txt 2>&1 &
 ```
 
+https://github.com/daerduoCarey/PyTorchEMD

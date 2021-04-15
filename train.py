@@ -15,7 +15,7 @@ from data import ShapeNetPart
 from models.model import ConsNet
 
 from utils import obj_rotate_perm, obj_2_perm, emd_mixup, add_mixup
-from utils import chamfer_distance, L1_loss, emd_loss
+from utils import chamfer_distance, L1_loss, emd_loss, emd_loss_2
 from utils import rand_proj, IOStream
 
 
@@ -88,6 +88,7 @@ def train(args, configpath):
         print('Use Chamfer Distance')
     else:
         print('Not implemented')
+
     
     io.cprint('Experiment: %s' % args.exp_name)
 
@@ -165,8 +166,15 @@ def train(args, configpath):
                 loss = loss1 + loss2
             elif args.loss == 'emd':
                 loss = emd_loss(pred1, data1) + emd_loss(pred2, data2)
+            elif args.loss == 'emd2':
+                loss = emd_loss_2(pred1, data1) + emd_loss_2(pred2, data2)
+            else:
+                raise NotImplementedError
 
-            
+            if args.l2loss:
+                l2_loss = nn.MSELoss()(pred1, data1) + nn.MSELoss()(pred2, data2)
+                loss += args.l2_param * l2_loss
+
             loss.backward()
             
             train_loss = train_loss + loss.item()
@@ -239,6 +247,10 @@ def train(args, configpath):
                         loss = loss1 + loss2
                     elif args.loss == 'emd':
                         loss = emd_loss(pred1, data1) + emd_loss(pred2, data2)
+                    elif args.loss == 'emd2':
+                        loss = emd_loss_2(pred1, data1) + emd_loss_2(pred2, data2)
+                    else:
+                        raise NotImplementedError
 
                     test_loss = test_loss + loss.item()
             io.cprint('Train loss: %.6f, Test loss: %.6f' % (train_loss / len(train_loader), test_loss / len(test_loader)))

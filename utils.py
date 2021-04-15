@@ -61,6 +61,24 @@ def emd_loss(p1, p2):
     return dist.mean()
 
 
+def emd_loss_2(p1, p2):
+    '''
+    Calculate emd distance between two points sets, where p1 is the predicted point cloud and p2 is the ground truth point cloud
+    :param p1: size[B, N, 3]
+    :param p2: size[B, N, 3]
+    :return: average of all batches of emd distance of two point sets
+    '''
+    import ctypes  
+    ll = ctypes.cdll.LoadLibrary   
+    
+    emd = ll('./emd_cuda.cpython-38-x86_64-linux-gnu.so') 
+    from emd import earth_mover_distance
+
+    d = earth_mover_distance(p1, p2, transpose=False)
+    loss = d.mean()
+    
+    return loss
+
 def obj_rotate_perm(data, label, use_cuda=True):
     '''
     Rotate point clouds
@@ -160,7 +178,7 @@ def rand_proj(point):
     list = range(point.size()[2])
     indices = random.sample(list, 2)
     indices = [min(indices), max(indices)]
-    # indices = [0, 1]
+    # indices = [1, 2]
     coords = point[:, :, indices]
     return coords
 

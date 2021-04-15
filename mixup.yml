@@ -13,7 +13,7 @@ pretrain_path: ./model.pkl
 # use resgcn
 nlayers: 3
 
-# decoder
+# encoder
 wide: 64
 
 
@@ -33,6 +33,11 @@ k: 20
 
 # Part Segmention
 class_choice: None
+
+
+# add l2 loss
+l2loss: True
+l2_param: 0.01
 
 
 # Condition

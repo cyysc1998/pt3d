@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
+from pytorch3d.ops import knn_points
+
 
 def knn(x, k):
     inner = -2*torch.matmul(x.transpose(2, 1), x)
